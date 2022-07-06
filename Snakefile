@@ -6,12 +6,12 @@ genome = config['genome']
 hogwash = ["hogwash_synchronous", "hogwash_phyc"]
 
 ncores = config['ncores']
-ml_methods = config['ml_methods']
-kfold = config['kfold']
+# ml_methods = config['ml_methods']
+# kfold = config['kfold']
 
-nseeds = config['nseeds']
-start_seed = 100
-seeds = range(start_seed, start_seed + nseeds)
+# nseeds = config['nseeds']
+# start_seed = 100
+# seeds = range(start_seed, start_seed + nseeds)
 
 # attempt limit is set to 5 in the file code/submit_slurm.sh under restart-times
 def get_mem_mb_lowest(wildcards, attempt):
@@ -69,10 +69,6 @@ rule generate_mikropml_df:
         group = "full" #I want the same full matrix going through preprocessing, only subset to specific strains from prepro_overall after this is complete
     params:
         path = get_geno_path
-        # core_path = config['core'],
-        # pan_path = config['pan'],
-        # gene_path = config['gene'],
-        # struct_path = config['struct']
     log:
         "log/{phenotype}/{group}.{genome}.generate_mikropml_df.txt"
     resources:
@@ -176,19 +172,19 @@ def aggregate_input2(wildcards):
 #         genome = "core",
 #         hogwash=hogwash)
 
-def aggregate_input4(wildcards):
-    checkpoint_output = checkpoints.prepro_overall.get(**wildcards).output[0]
-    return expand('results/{phenotype}/{group}.{genome}.report.md',
-        phenotype=wildcards.phenotype,
-        group=glob_wildcards(os.path.join(checkpoint_output,"{group}.tsv")).group,
-        genome=genome)
+# def aggregate_input4(wildcards):
+#     checkpoint_output = checkpoints.prepro_overall.get(**wildcards).output[0]
+#     return expand('results/{phenotype}/{group}.{genome}.report.md',
+#         phenotype=wildcards.phenotype,
+#         group=glob_wildcards(os.path.join(checkpoint_output,"{group}.tsv")).group,
+#         genome=genome)
 
 # if 'core' in genome:
 #     finish_list = [aggregate_input1, aggregate_input2, aggregate_input3, aggregate_input4]
 # else:
     # finish_list = [aggregate_input1, aggregate_input2, aggregate_input4]
 
-finish_list = [aggregate_input1, aggregate_input2, aggregate_input4]
+finish_list = [aggregate_input1, aggregate_input2]
 
 rule finish_test:
     input:
