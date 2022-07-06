@@ -11,7 +11,9 @@ doFuture::registerDoFuture()
 future::plan(future::multicore, workers = snakemake@resources[["ncores"]])
 
 #FILES ----
-pheno <- readr::read_csv(file = snakemake@input[["metadata"]])
+pheno <- readr::read_csv(file = snakemake@input[["metadata"]]) %>%
+  rename("genome_id" ="Genome ID") %>%
+  mutate(genome_id = gsub("$", "_", genome_id))
 phenotype_cols <- snakemake@wildcards[["phenotype"]]
 
 paths <- paste0(c("data/pheno/",
@@ -54,73 +56,9 @@ if(!all(sapply(paths, dir.exists))){
 
 #UNADJUSTED FILE ----
 unadjusted_out <- pheno %>%
+  filter(grepl("Kleb", Organism_ID)) %>%
   select(genome_id,
          all_of(phenotype_cols))
   
 write_tsv(unadjusted_out,
           file = paste0("data/pheno/", phenotype_cols, "/full.tsv"))
-
-#GENERATE SPLIT SEVERITY FILES ----
-quartiles <- pheno %>%
-    select(elix_weighted_update) %>%
-    drop_na() %>%
-    deframe() %>%
-    quantile()
-
-q1 <- pheno %>%
-  filter(elix_weighted_update <= quartiles[2]) %>%
-  select(genome_id,
-         all_of(phenotype_cols))
-
-q2_3 <- pheno %>%
-  filter(elix_weighted_update > quartiles[2] & elix_weighted_update <= quartiles[4]) %>%
-  select(genome_id,
-         all_of(phenotype_cols))
-
-q4 <- pheno %>%
-  filter(elix_weighted_update > quartiles[4]) %>%
-  select(genome_id,
-         all_of(phenotype_cols))
-
-if(nrow(q1)+nrow(q2_3)+nrow(q4) != nrow(pheno)){
-  stop("quartile splits are missing data")
-}
-
-write_tsv(q1,
-          file = paste0("data/pheno/", phenotype_cols, "/q1.tsv"))
-write_tsv(q2_3,
-          file = paste0("data/pheno/", phenotype_cols, "/q2_3.tsv"))
-write_tsv(q4,
-          file = paste0("data/pheno/", phenotype_cols, "/q4.tsv"))
-  
-even_split <- pheno %>%
-    select(elix_weighted_update) %>%
-    drop_na() %>%
-    deframe() %>%
-    quantile(probs = seq(0, 1, 1/3))
-
-t1 <- pheno %>%
-  filter(elix_weighted_update <= even_split[2]) %>%
-  select(genome_id,
-         all_of(phenotype_cols))
-
-t2 <- pheno %>%
-  filter(elix_weighted_update > even_split[2] & elix_weighted_update <= even_split[3]) %>%
-  select(genome_id,
-         all_of(phenotype_cols))
-
-t3 <- pheno %>%
-  filter(elix_weighted_update > even_split[3]) %>%
-  select(genome_id,
-         all_of(phenotype_cols))
-
-if(nrow(t1)+nrow(t2)+nrow(t3) != nrow(pheno)){
-  stop("tertile splits are missing data")
-}
-
-write_tsv(t1,
-          file = paste0("data/pheno/", phenotype_cols, "/t1.tsv"))
-write_tsv(t2,
-          file = paste0("data/pheno/", phenotype_cols, "/t2.tsv"))
-write_tsv(t3,
-          file = paste0("data/pheno/", phenotype_cols, "/t3.tsv"))

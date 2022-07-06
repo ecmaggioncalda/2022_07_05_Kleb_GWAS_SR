@@ -8,6 +8,15 @@ library(doFuture)
 doFuture::registerDoFuture()
 future::plan(future::multicore, workers = snakemake@resources[["ncores"]])
 
+# FUNCTION ----
+# return vector of non-variant sites
+index_of_non_var_sites <- function(mat){
+  
+  index = as.numeric(c(which(rowSums(mat) == 0), which(rowSums(mat) == ncol(mat))))
+  return(index)
+  
+}
+
 #PHENO ----
 paste0(snakemake@input[["pheno"]])
 pheno <- readr::read_delim(file = snakemake@input[["pheno"]],
@@ -19,43 +28,34 @@ pheno_merge <- pheno_merge[, -1, drop = FALSE]
 
 #GENO ----
 paste0(snakemake@params[['path']])
-geno <- read.delim(file = snakemake@params[['path']],
+geno <- read.table(snakemake@params[['path']],
+                   sep = "\t",
+                   stringsAsFactors = FALSE,
+                   header = TRUE,
                    row.names = 1)
-
-# if(snakemake@wildcards[['genome']] == "pan"){
-#   
-#   print(paste0("using pan genome path:", snakemake@params[['pan_path']]))
-#   
-#   geno <- read.delim(file = snakemake@params[['pan_path']],
-#                      row.names = 1)
-#   
-# }else if(snakemake@wildcards[['genome']] == "core"){
-#   
-#   print(paste0("using core genome path:", snakemake@params[['core_path']]))
-#   
-#   geno <- read.delim(file = snakemake@params[['core_path']],
-#                      row.names = 1)
-#   
-# }else if(snakemake@wildcards[['genome']] == "gene"){
-#   
-#   print(paste0("using gene genome path:", snakemake@params[['gene_path']]))
-#   
-#   geno <- read.delim(file = snakemake@params[['gene_path']],
-#                      row.names = 1)
-#   
-# }else if(snakemake@wildcards[['genome']] == "struct"){
-#   
-#   print(paste0("using gene genome path:", snakemake@params[['struct_path']]))
-#   
-#   geno <- read.delim(file = snakemake@params[['struct_path']],
-#                      row.names = 1)
-#   
-# }
 
 print("Geno matrix has completed read in")
 
-geno_merge <- t(geno)
-geno_merge <- geno_merge[rownames(geno_merge) %in% rownames(pheno_merge), ]
+colnames(geno) <- gsub("$", "_", colnames(geno))
+
+if(!all(colnames(geno) %in% rownames(pheno_merge))){
+  stop("Mistmatch in geno/pheno contents")
+}
+
+# geno <- geno[,colnames(geno) %in% rownames(pheno_merge)]
+rownames(geno) <- make.names(rownames(geno), unique = TRUE)
+
+# REMOVE VARS
+to_remove <- index_of_non_var_sites(geno)
+geno_subset <- geno[-to_remove,]
+geno_merge <- t(geno_subset)
+
+# geno_distinct <- distinct(geno_subset)
+# temp_geno <- as.data.frame(geno_distinct)
+# temp_geno <- as.data.frame(geno_subset)
+# temp_geno <- temp_geno %>% 
+#   rownames_to_column('variant')
+# geno_merge <- geno_merge[rownames(geno_merge) %in% rownames(pheno_merge), ]
 
 if(sum(rownames(pheno_merge) %in% rownames(geno_merge)) != length(rownames(pheno_merge))){
   stop("mismatch between pheno and geno contents")
