@@ -46,7 +46,7 @@ test*
 #ignore large folders
 data/**
 results/**
-log/**
+#log/**
 aggregated/**
 benchmarks/**
 figures/**
