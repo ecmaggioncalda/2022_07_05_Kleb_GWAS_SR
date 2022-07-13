@@ -48,8 +48,10 @@ data/**
 results/**
 log/*
 !log/hpc
-!log/hpc/jobs
+log/hpc/*
+!log/hpc/jobs/*
 !log/runs
+log/runs/*
 aggregated/**
 benchmarks/**
 figures/**
