@@ -46,7 +46,10 @@ test*
 #ignore large folders
 data/**
 results/**
-#log/**
+log/*
+!log/hpc
+!log/hpc/jobs
+!log/runs
 aggregated/**
 benchmarks/**
 figures/**
